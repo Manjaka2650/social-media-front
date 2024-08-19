@@ -1,0 +1,41 @@
+{
+  "expo": {
+    "name": "SM",
+    "slug": "SM",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      }
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "scheme": "mycoolredirect",
+    "plugins": [
+      "@config-plugins/react-native-webrtc",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Kaiza lessy! homena alalana va ilay entana ??",
+          "cameraPermission": "Ary ilay camera ahoana?",
+          "microphonePermission": "De ilay micro tsy hadino",
+          "savePhotosPermission": "Allow to save photo?"
+        }
+      ],
+      "expo-router"
+    ]
+  }
+}

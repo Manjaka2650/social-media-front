@@ -1,0 +1,316 @@
+
+import React, { useState, useEffect, useRef } from "react";
+import { View, StyleSheet } from "react-native";
+import { GiftedChat, Bubble, Send } from "react-native-gifted-chat";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useLocalSearchParams } from "expo-router";
+import api from "../../Api";
+import { getValue } from "../../components/fonction/fonction";
+import Icon from "react-native-vector-icons/FontAwesome6";
+import lien, { socketLink } from "../../lien";
+
+// export default function SingleMessage() {
+//   const { room_name } = useLocalSearchParams();
+//   const socket = new WebSocket(`ws://192.168.43.131:8000/ws/chat/${room_name}`);
+//   const [messages, setMessages] = useState([]);
+//   const [username, setUsername] = useState("");
+
+//   // Load the user's username from AsyncStorage
+
+//   const getUsename = async () => {
+//     const user = await getValue("username");
+//     setUsername(user);
+//   };
+//   // Load initial messages from the server
+//   const getMessage = async () => {
+//     const token = await getValue("accessToken");
+//     const u = await getValue("username");
+//     setUsername(u);
+//     const response = await api.get("/message/room/" + room_name, {
+//       headers: {
+//         Authorization: "Token " + token,
+//       },
+//     });
+//     if (response.status === 200) {
+//       // console.log(response.data)
+//       const d = response.data;
+
+//       d.forEach((element) => {
+//         console.log(element);
+//         setMessages((prevMessages) => [
+//           ...prevMessages,
+//           {
+//             _id: element.id,
+//             text: element.content,
+//             createdAt: element.timestamp,
+//             user: {
+//               _id: element.sender.username === username ? 1 : 2,
+//               name: element.sender.name,
+//               avatar: `${lien}${element.sender.avatar}`,
+//             },
+//           },
+//         ]);
+//       });
+//     }
+//   };
+
+//   useEffect(() => {
+//     getUsename();
+
+//     // getMessage();
+
+//     socket.onopen = () => {
+//       console.log("WebSocket connected");
+//     };
+//     socket.onclose = () => {
+//       console.log("WebSocket closed");
+//     };
+//     socket.addEventListener("message", (e) => {
+//       const data = JSON.parse(e.data);
+//       const messageData = data["message"];
+//       if (messageData && messageData.sender && messageData.content) {
+//         const newMessage = {
+//           _id: messageData.id,
+//           text: messageData.content,
+//           createdAt: messageData.timestamp,
+//           user: {
+//             _id: messageData.sender.username === username ? 1 : 2,
+//             name: messageData.sender.name,
+//             avatar: `${lien}${messageData.sender.avatar}`,
+//           },
+//         };
+//         setMessages((prevMessages) =>
+//           GiftedChat.append(prevMessages, [newMessage])
+//         );
+//       }
+//     });
+
+//     return () => socket.close();
+//   }, [room_name]);
+
+//   // Handle sending messages
+//   const onSend = useCallback((messages = []) => {
+//     console.log(username);
+//     const newMessage = messages[0];
+//     socket.send(
+//       JSON.stringify({
+//         message: newMessage.text,
+//         room_name: room_name,
+//         sender: username,
+//       })
+//     );
+//     setMessages((prevMessages) => GiftedChat.append(prevMessages, messages));
+//   }, []);
+
+//   // Customize message bubble style
+//   const renderBubble = (props) => (
+//     <Bubble
+//       {...props}
+//       wrapperStyle={{
+//         right: { backgroundColor: "purple" },
+//         left: { backgroundColor: "gray" },
+//       }}
+//       textStyle={{
+//         right: { color: "white" },
+//         left: { color: "black" },
+//       }}
+//     />
+//   );
+
+//   // Customize the send button
+//   const renderSend = (props) => (
+//     <Send {...props}>
+//       <View style={styles.sendingContainer}>
+//         <Icon name="paper-plane" size={26} color="purple" />
+//       </View>
+//     </Send>
+//   );
+
+//   return (
+//     <View style={{ flex: 1 }}>
+//       <View></View>
+//       <GiftedChat
+//         messages={messages}
+//         onSend={(messages) => onSend(messages)}
+//         user={{
+//           _id: 1,
+//           name: username,
+//         }}
+//         renderBubble={renderBubble}
+//         renderSend={renderSend}
+//         alwaysShowSend
+//       />
+//     </View>
+//   );
+// }
+
+export default function SingleMessage() {
+  const [messages, setMessages] = useState([]);
+  const ws = useRef(null);
+  const { room_name } = useLocalSearchParams();
+  const [userInfo, setuserInfo] = useState({
+    _id: 1,
+    name: "manjaka",
+    avatar: "/media/default.png",
+  });
+  // Assuming room_name is passed via route params
+
+  const getUserInfo = async () => {
+    const username = await getValue("username");
+    const userId = await getValue("userId");
+    const avatar = await getValue("avatar");
+
+    setuserInfo({
+      _id: userId,
+      name: username,
+      avatar: `${lien}${avatar}`,
+    });
+    // console.log(userInfo);
+  };
+
+  // const getMessage = async () => {
+  //   const token = await getValue("accessToken");
+  //   // Fetch initial messages using Axios
+  //   api
+  //     .get("/message/room/" + room_name, {
+  //       headers: { Authorization: "Token " + token },
+  //     })
+  //     .then((response) => {
+  //       const formattedMessages = response.data.map((msg) => ({
+  //         _id: msg.id,
+  //         text: msg.content,
+  //         createdAt: new Date(msg.timestamp),
+  //         user: {
+  //           _id: msg.sender_id,
+  //           name: msg.sender,
+  //         },
+  //       }));
+  //       console.log(formattedMessages);
+  //       setMessages(formattedMessages.reverse());
+  //     })
+  //     .catch((error) => {
+  //       console.error("Error fetching messages:", error);
+  //     });
+  // };
+
+  const getMessage = async () => {
+    const token = await getValue("accessToken");
+    // const u = await getValue("username");
+    // setUsername(u);
+    const response = await api.get("/message/room/" + room_name, {
+      headers: {
+        Authorization: "Token " + token,
+      },
+    });
+    if (response.status === 200) {
+      // console.log(response.data)
+      const d = response.data;
+      // console.log(d);
+      const formatedData = await d.map((element) => ({
+        _id: element.id,
+        text: element.content,
+        createdAt: new Date(element.timestamp),
+        user: {
+          _id: element.sender.id,
+          name: element.sender.username,
+          avatar: `${lien}${element.sender.avatar}`,
+        },
+      }));
+      console.log("formated data : ", formatedData);
+      console.log("formated data : ", formatedData);
+      setMessages(formatedData);
+    }
+  };
+
+  useEffect(() => {
+    getUserInfo();
+    getMessage();
+    // Setup WebSocket connection
+    ws.current = new WebSocket(`${socketLink}/chat/${room_name}`);
+
+    ws.current.onopen = (event) => {
+      console.log("WebSocket opened!");
+    };
+    ws.current.onmessage = (event) => {
+      const n = JSON.parse(event.data);
+      const newMessage = n["message"];
+      const formattedMessage = {
+        _id: newMessage.id,
+        text: newMessage.content,
+        createdAt: new Date(newMessage.timestamp),
+        user: {
+          _id: newMessage.sender_id,
+          name: newMessage.sender.username,
+          avatar: `${lien}${newMessage.sender.avatar}`,
+        },
+      };
+      setMessages((previousMessages) =>
+        GiftedChat.append(previousMessages, formattedMessage)
+      );
+    };
+
+    ws.current.onclose = () => {
+      console.log("WebSocket closed!");
+    };
+
+    return () => {
+      ws.current.close();
+    };
+  }, [room_name]);
+
+  const handleSend = (newMessages = []) => {
+    const newMessage = newMessages[0];
+    const messageData = {
+      room: room_name,
+      sender: userInfo.name,
+      message: newMessage.text,
+    };
+
+    // Send message to WebSocket server
+    ws.current.send(JSON.stringify(messageData));
+
+    // Append new message locally
+    setMessages((previousMessages) =>
+      GiftedChat.append(previousMessages, newMessages)
+    );
+  };
+
+  // Customize message bubble style
+  const renderBubble = (props) => (
+    <Bubble
+      {...props}
+      wrapperStyle={{
+        right: { backgroundColor: "purple" },
+        left: { backgroundColor: "gray" },
+      }}
+      textStyle={{
+        right: { color: "white" },
+        left: { color: "black" },
+      }}
+    />
+  );
+  return (
+    <View>
+      <GiftedChat
+        messages={messages}
+        onSend={(newMessages) => handleSend(newMessages)}
+        user={{
+          _id: userInfo._id,
+          avatar: userInfo.avatar,
+          name: userInfo.name,
+        }}
+        renderBubble={renderBubble}
+      />
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  sendingContainer: {
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 10,
+  },
+});
+
+//========================================== the newest ======================================//
